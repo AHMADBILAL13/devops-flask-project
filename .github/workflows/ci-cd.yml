@@ -1,4 +1,4 @@
-name: CI/CD for Flask App
+name: CI/CD for Flask App (No venv)
 
 on:
   push:
@@ -18,19 +18,17 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: 📦 Install dependencies
+      - name: 📦 Install Flask and dependencies globally
         run: |
-          python -m venv venv
-          source venv/bin/activate
+          pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: ✅ Run basic test
+      - name: ✅ Run and test Flask app
         run: |
-          echo "Running basic check"
-          python app.py & sleep 5
+          nohup python app.py &
+          sleep 5
           curl --retry 5 --retry-delay 2 http://localhost:5000
 
       - name: 🐳 Build Docker image
-        run: |
-          docker build -t devops-flask-app .
+        run: docker build -t devops-flask-app .
 
