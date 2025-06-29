@@ -1,4 +1,4 @@
-name: CI/CD for Flask App (No venv)
+name: CI/CD for Flask App with EC2 Auto Deployment
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,17 +18,28 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: 📦 Install Flask and dependencies globally
+      - name: 📦 Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: ✅ Run and test Flask app
+      - name: ✅ Test Flask App
         run: |
           nohup python app.py &
           sleep 5
           curl --retry 5 --retry-delay 2 http://localhost:5000
 
-      - name: 🐳 Build Docker image
-        run: docker build -t devops-flask-app .
+      - name: 🚀 Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd devops-flask-project
+            git pull origin main
+            docker stop flask-container || true
+            docker rm flask-container || true
+            docker build -t flask-app .
+            docker run -d -p 5000:5000 --name flask-container flask-app
 
